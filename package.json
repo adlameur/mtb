@@ -1,6 +1,7 @@
 {
   "name": "mtb-slave-bot",
-  "version": "1.2.1",
+  "version": "1.0.0",
+  "type": "module",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
