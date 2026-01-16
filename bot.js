@@ -1,14 +1,17 @@
-const mineflayer = require('mineflayer')
-const { pathfinder, Movements, goals } = require('mineflayer-pathfinder')
-const autoeat = require('mineflayer-auto-eat').plugin
+import mineflayer from 'mineflayer'
+import { pathfinder, Movements, goals } from 'mineflayer-pathfinder'
+import { plugin as autoeat } from 'mineflayer-auto-eat'
 
 // --- CONFIGURATION ---
 const config = {
   host: 'dynamic-8.magmanode.com', // PUT YOUR SERVER IP HERE
   port: 25815,
-  username: 'MTB_SLAVE',       // Name: MTB_SLAVE
-  version: '1.21',             // LOCKED to version 1.21
-  owner: 'Adel Ameur'          // Only obeys you
+  username: 'MTB_SLAVE',       
+  version: '1.21',             
+  owner: 'Adel Ameur',         
+  
+  // AuthMe Password (leave empty if not needed)
+  auth_password: 'changeme123' 
 }
 
 function createBot() {
@@ -17,8 +20,6 @@ function createBot() {
     port: config.port,
     username: config.username,
     version: config.version
-    // If your server is Premium (not cracked), uncomment the line below:
-    // auth: 'microsoft' 
   })
 
   // Load plugins
@@ -26,69 +27,67 @@ function createBot() {
   bot.loadPlugin(autoeat)
 
   bot.on('login', () => {
-    console.log(`${bot.username} logged in on version 1.21`)
+    console.log(`${bot.username} joined.`)
   })
 
   bot.on('spawn', () => {
+    // 1. AUTO LOGIN LOGIC
+    if (config.auth_password) {
+        setTimeout(() => {
+            bot.chat(`/register ${config.auth_password} ${config.auth_password}`)
+            bot.chat(`/login ${config.auth_password}`)
+        }, 1500) 
+    }
+
+    // 2. MOVEMENT SETUP
     const defaultMove = new Movements(bot)
-    // 1.21 specific movement tweaks (optional but helps stability)
-    defaultMove.canDig = false // Set to true if you want him to break blocks to get to you
-    
+    defaultMove.canDig = false 
     bot.pathfinder.setMovements(defaultMove)
-    bot.chat('MTB SLAVE online. Version 1.21. Awaiting orders.')
+    
+    // 3. ANNOUNCE
+    setTimeout(() => {
+        bot.chat('MTB SLAVE is online (ESM Mode).')
+    }, 3000)
   })
 
-  // --- AUTO EAT (SURVIVAL) ---
-  bot.on('autoeat_started', () => {
-    console.log('Eating food...')
-  })
-
+  // --- AUTO EAT ---
+  bot.on('autoeat_started', () => { console.log('Eating...') })
   bot.on('health', () => {
     if (bot.food === 20) bot.autoEat.disable()
     else bot.autoEat.enable()
   })
 
-  // --- CHAT COMMANDS ---
+  // --- COMMANDS ---
   bot.on('chat', (username, message) => {
     if (username !== config.owner) return
-
     const target = bot.players[username]?.entity
 
-    // "come"
     if (message === 'come') {
-      if (!target) {
-        bot.chat("I can't see you!")
-        return
-      }
-      bot.chat('Moving to your location.')
+      if (!target) return
+      bot.chat('Coming.')
       const { GoalFollow } = goals
       bot.pathfinder.setGoal(new GoalFollow(target, 1), true)
     }
 
-    // "stop"
     if (message === 'stop') {
       bot.chat('Stopping.')
       bot.pathfinder.setGoal(null)
     }
+    
+    if (message === 'twerk') {
+        bot.chat('Getting sturdy.')
+        let interval = setInterval(() => {
+            bot.setControlState('sneak', true)
+            setTimeout(() => bot.setControlState('sneak', false), 200)
+        }, 400)
+        setTimeout(() => clearInterval(interval), 5000)
+    }
 
-    // "drop"
     if (message === 'drop') {
         bot.chat("Dropping inventory.")
         const items = bot.inventory.items()
         for (const item of items) {
             bot.tossStack(item)
-        }
-    }
-    
-    // "mount" (Sit in nearest boat/minecart)
-    if (message === 'mount') {
-        const vehicle = bot.nearestEntity((entity) => {
-            return entity.name === 'boat' || entity.name === 'minecart'
-        })
-        if (vehicle) {
-            bot.mount(vehicle)
-        } else {
-            bot.chat("No vehicle nearby.")
         }
     }
   })
